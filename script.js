@@ -574,13 +574,11 @@
     container.innerHTML = `
       <div class="account-card">
         <div class="account-card__people">${peopleHTML}</div>
-        <div class="account-card__bank">
-          <button class="account-card__number" data-account="${account.number}">
-            <span class="account-card__bank-name">${account.bank}</span>
-            <span>${account.number}</span>
-            <svg class="account-card__copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-          </button>
-        </div>
+        <button class="account-card__number" data-account="${account.number}">
+          <span class="account-card__bank-name">${account.bank}</span>
+          <span>${account.number}</span>
+          <svg class="account-card__copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        </button>
       </div>
     `;
   }
