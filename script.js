@@ -39,16 +39,13 @@
   function loadImagesFromFolder(folder, maxAttempts = 50) {
     return new Promise(resolve => {
         const images = [];
+        const exts = ['jpg', 'jpeg', 'png'];
         let current = 1;
         let consecutiveFails = 0;
 
-        function tryNext() {
-            if (current > maxAttempts || consecutiveFails >= 3) {
-                resolve(images);
-                return;
-            }
+        function tryLoad(index, extIdx) {
             const img = new Image();
-            const path = `images/${folder}/${current}.jpg`;
+            const path = `images/${folder}/${index}.${exts[extIdx]}`;
             img.onload = function() {
                 images.push(path);
                 consecutiveFails = 0;
@@ -56,11 +53,23 @@
                 tryNext();
             };
             img.onerror = function() {
-                consecutiveFails++;
-                current++;
-                tryNext();
+                if (extIdx + 1 < exts.length) {
+                    tryLoad(index, extIdx + 1);
+                } else {
+                    consecutiveFails++;
+                    current++;
+                    tryNext();
+                }
             };
             img.src = path;
+        }
+
+        function tryNext() {
+            if (current > maxAttempts || consecutiveFails >= 3) {
+                resolve(images);
+                return;
+            }
+            tryLoad(current, 0);
         }
 
         tryNext();
@@ -336,9 +345,7 @@
     const grid = $('#calendarGrid');
 
     // Header
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
-    grid.innerHTML = `<div class="calendar__header">${monthNames[month]} ${year}</div>`;
+    grid.innerHTML = `<div class="calendar__header">${year}년 ${String(month + 1).padStart(2, '0')}월</div>`;
 
     // Weekdays
     const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
@@ -375,38 +382,7 @@
 
     grid.appendChild(daysContainer);
 
-    // Google Calendar link
-    const startDate = dt.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    const endDt = new Date(dt.getTime() + 2 * 60 * 60 * 1000);
-    const endDate = endDt.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(CONFIG.groom.name + ' ♥ ' + CONFIG.bride.name + ' 결혼식')}&dates=${startDate}/${endDate}&location=${encodeURIComponent(CONFIG.wedding.venue + ' ' + CONFIG.wedding.address)}&details=${encodeURIComponent('결혼식에 초대합니다.')}`;
-    $('#googleCalBtn').href = gcalUrl;
-
-    // ICS download
-    $('#icsDownloadBtn').addEventListener('click', () => {
-      const icsContent = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//Wedding//Invitation//KO',
-        'BEGIN:VEVENT',
-        `DTSTART:${startDate}`,
-        `DTEND:${endDate}`,
-        `SUMMARY:${CONFIG.groom.name} ♥ ${CONFIG.bride.name} 결혼식`,
-        `LOCATION:${CONFIG.wedding.venue} ${CONFIG.wedding.address}`,
-        'DESCRIPTION:결혼식에 초대합니다.',
-        'END:VEVENT',
-        'END:VCALENDAR'
-      ].join('\r\n');
-
-      const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'wedding.ics';
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('캘린더 파일이 다운로드됩니다');
-    });
+    $('#calendarDateTime').textContent = formatDate(CONFIG.wedding.date, CONFIG.wedding.time);
   }
 
   /* ═══════════════════════════════════════════
@@ -514,6 +490,11 @@
       }
     });
 
+    // Prevent background scroll bleed on iOS while modal is open
+    modal.addEventListener('touchmove', (e) => {
+      if (modal.classList.contains('is-open')) e.preventDefault();
+    }, { passive: false });
+
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (!modal.classList.contains('is-open')) return;
@@ -574,25 +555,34 @@
      Account Section (축의금)
      ═══════════════════════════════════════════ */
 
-  function renderAccounts(accounts, containerId) {
+  function renderAccountCard(person, selfRole, account, containerId) {
     const container = $(`#${containerId}`);
-    accounts.forEach((acc) => {
-      const item = document.createElement('div');
-      item.className = 'account-item';
-      item.innerHTML = `
-        <div class="account-item__info">
-          <div class="account-item__role">${acc.role}</div>
-          <div class="account-item__detail">
-            <span class="account-item__name">${acc.name || ''}</span>
-            ${acc.bank} ${acc.number}
-          </div>
+    if (!account) return;
+
+    const people = [
+      { role: '아버지', name: person.father, deceased: person.fatherDeceased },
+      { role: '어머니', name: person.mother, deceased: person.motherDeceased },
+      { role: selfRole, name: person.name, deceased: false }
+    ];
+
+    const peopleHTML = people.map((p) => `
+      <div class="account-card__person">
+        <span class="account-card__role">${p.role}</span>
+        <span class="account-card__name">${p.deceased ? '故 ' : ''}${p.name}</span>
+      </div>`).join('');
+
+    container.innerHTML = `
+      <div class="account-card">
+        <div class="account-card__people">${peopleHTML}</div>
+        <div class="account-card__bank">
+          <button class="account-card__number" data-account="${account.number}">
+            <span class="account-card__bank-name">${account.bank}</span>
+            <span>${account.number}</span>
+            <svg class="account-card__copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
         </div>
-        <button class="account-item__copy" data-account="${acc.bank} ${acc.number} ${acc.name || ''}">
-          복사
-        </button>
-      `;
-      container.appendChild(item);
-    });
+      </div>
+    `;
   }
 
   function initAccordion(triggerId, panelId) {
@@ -612,15 +602,15 @@
   }
 
   function initAccounts() {
-    renderAccounts(CONFIG.accounts.groom, 'groomAccountList');
-    renderAccounts(CONFIG.accounts.bride, 'brideAccountList');
+    renderAccountCard(CONFIG.groom, '신랑', CONFIG.accounts.groom[0], 'groomAccountList');
+    renderAccountCard(CONFIG.bride, '신부', CONFIG.accounts.bride[0], 'brideAccountList');
 
     initAccordion('groomAccordion', 'groomAccordionPanel');
     initAccordion('brideAccordion', 'brideAccordionPanel');
 
     // Copy account delegates
     document.addEventListener('click', (e) => {
-      const btn = e.target.closest('.account-item__copy');
+      const btn = e.target.closest('[data-account]');
       if (!btn) return;
       const text = btn.dataset.account;
       copyToClipboard(text, '계좌번호가 복사되었습니다');
