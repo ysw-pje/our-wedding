@@ -68,6 +68,11 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  /* 한글이 어절(띄어쓰기) 단위로 끊기게 — 글자 단위로 깨지는 현상 방지 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  /* 마지막 줄에 한 단어만 남는 현상 방지 (미지원 브라우저는 무시) */
+  text-wrap: pretty;
   padding-top: var(--safe-top);
   padding-bottom: var(--safe-bottom);
   padding-left: var(--safe-left);
@@ -370,6 +375,7 @@ a {
   letter-spacing: 4px;
   margin-bottom: var(--spacing-lg);
   color: var(--color-text);
+  text-wrap: balance;
 }
 
 /* ─── Ornament ─── */
@@ -440,11 +446,13 @@ a {
 
 .hero__names {
   font-family: var(--font-serif);
-  font-size: 2rem;
+  /* 화면 폭에 맞춰 자동 (최소 1.4rem ~ 최대 2.5rem), nowrap 상태에서도 안 넘침 */
+  font-size: clamp(1.4rem, 7vw, 2.5rem);
   font-weight: 200;
-  letter-spacing: 8px;
+  letter-spacing: 6px;
   margin-bottom: var(--spacing-md);
   line-height: 1.4;
+  white-space: nowrap;
 }
 
 .hero__divider {
@@ -1214,7 +1222,6 @@ a {
   }
 
   .hero__names {
-    font-size: 2.5rem;
     letter-spacing: 12px;
   }
 
