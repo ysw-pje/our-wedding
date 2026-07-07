@@ -73,6 +73,18 @@ const CONFIG = {
     ]
   },
 
+  // ── 특정 링크에서만 노출되는 대체 계좌 구성 ──
+  // 예: 주소 끝에 ?v=family 를 붙인 링크(...index.html?v=family)에서는
+  //     아래 구성이 대신 적용됩니다. 지정하지 않은 쪽(groom 등)은 위 기본값 사용.
+  accountVariants: {
+    family: {
+      bride: [
+        { role: "신부", name: "박재은", bank: "하나은행", number: "591-910540-60907" },
+        { role: "아버지", name: "박종만", bank: "신한은행", number: "110-405-881849" }
+      ]
+    }
+  },
+
   // ── 링크 공유 시 나타나는 문구 ──
   meta: {
     title: "양승원 ♥ 박재은 결혼합니다",

@@ -24,8 +24,9 @@
     const minutes = d.getMinutes();
     const period = hours < 12 ? '오전' : '오후';
     const h12 = hours % 12 || 12;
-    const minuteStr = minutes > 0 ? ` ${minutes}분` : '';
-    return `${year}년 ${month}월 ${date}일 ${day}요일 ${period} ${h12}시${minuteStr}`;
+    const minuteStr = minutes > 0 ? ` ${minutes}분` : '';
+    // '오후 5시 40분'을 줄바꿈 없는 공백( )으로 묶어, 줄이 넘칠 때 통째로 함께 내려가도록 함
+    return `${year}년 ${month}월 ${date}일 ${day}요일 ${period} ${h12}시${minuteStr}`;
   }
 
   function getWeddingDateTime() {
@@ -555,9 +556,9 @@
      Account Section (축의금)
      ═══════════════════════════════════════════ */
 
-  function renderAccountCard(person, selfRole, account, containerId) {
+  function renderAccountCard(person, selfRole, accounts, containerId) {
     const container = $(`#${containerId}`);
-    if (!account) return;
+    if (!accounts || !accounts.length) return;
 
     const people = [
       { role: '아버지', name: person.father, deceased: person.fatherDeceased },
@@ -571,14 +572,19 @@
         <span class="account-card__name">${p.deceased ? '故 ' : ''}${p.name}</span>
       </div>`).join('');
 
-    container.innerHTML = `
-      <div class="account-card">
-        <div class="account-card__people">${peopleHTML}</div>
+    const multiple = accounts.length > 1;
+    const numbersHTML = accounts.map((account) => `
         <button class="account-card__number" data-account="${account.number}">
+          ${multiple ? `<span class="account-card__owner">${account.name}</span>` : ''}
           <span class="account-card__bank-name">${account.bank}</span>
           <span>${account.number}</span>
           <svg class="account-card__copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-        </button>
+        </button>`).join('');
+
+    container.innerHTML = `
+      <div class="account-card">
+        <div class="account-card__people">${peopleHTML}</div>
+        <div class="account-card__numbers">${numbersHTML}</div>
       </div>
     `;
   }
@@ -600,8 +606,13 @@
   }
 
   function initAccounts() {
-    renderAccountCard(CONFIG.groom, '신랑', CONFIG.accounts.groom[0], 'groomAccountList');
-    renderAccountCard(CONFIG.bride, '신부', CONFIG.accounts.bride[0], 'brideAccountList');
+    const variantKey = new URLSearchParams(location.search).get('v');
+    const variant = (variantKey && CONFIG.accountVariants && CONFIG.accountVariants[variantKey]) || {};
+    const groomAccounts = variant.groom || CONFIG.accounts.groom;
+    const brideAccounts = variant.bride || CONFIG.accounts.bride;
+
+    renderAccountCard(CONFIG.groom, '신랑', groomAccounts, 'groomAccountList');
+    renderAccountCard(CONFIG.bride, '신부', brideAccounts, 'brideAccountList');
 
     initAccordion('groomAccordion', 'groomAccordionPanel');
     initAccordion('brideAccordion', 'brideAccordionPanel');
